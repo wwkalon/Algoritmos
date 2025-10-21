@@ -8,37 +8,69 @@
 using namespace std;
 
 class Node {
-    int key;
-    int value;
-
 public:
 
-    Node (int k, int v) : key(k), value(v), left(nullptr), right(nullptr) {};
-
+    int key;
+    int value;
+    int height;
     Node* left;
     Node* right;
-    int get_key () { return this->key; };
-    int get_val () { return this->value; };
-    void set_key (int k) { this->key = k; };
-    void set_val (int v) { this->value = v; };
-    // void set_left (Node* left_node) { this->left = left_node; };
-    // void set_right (Node* right_node) { this->right = right_node; };
+
+    Node (int k, int v) : key(k), value(v), height(-1), left(nullptr), right(nullptr) {};
 };
 
 
-class BST {
+class AVL {
 public:
 
     Node* root;
     int node_count;
 
-    BST() : root(nullptr), node_count(0) {};
-    ~BST() = default;
+    AVL() : root(nullptr), node_count(0) {};
+    ~AVL() = default;
     int find (int k);
     void insert (int k, int v);
     int remove (int k);
 
 private:
+
+    // auxiliary for avl
+
+    int h (Node* rt) {
+        if (rt == nullptr) return -1;
+        return rt->height;
+    }
+
+    int get_balance (Node* rt) {
+        if (rt == nullptr) return 0;
+        return h(rt->left) - h(rt->right);
+    }
+
+    Node* l_rotate (Node* rt) {
+
+        Node* l = rt->left;
+        Node* lr = l->right;
+
+        l->right = rt;
+        rt->left = lr;
+        rt->height = 1 + max(h(rt->left), h(rt->right));
+        l->height = 1 + max(h(l->left), h(l->right));
+        
+        return l;
+    }
+
+    Node* r_rotate (Node* rt) {
+
+        Node* r = rt->left;
+        Node* rl = r->right;
+
+        r->right = rt;
+        rt->left = rl;
+        rt->height = 1 + max(h(rt->left), h(rt->right));
+        r->height = 1 + max(h(r->left), h(r->right));
+        
+        return r;
+    }
 
     // auxiliary functions
 
@@ -58,8 +90,8 @@ private:
 
         if (rt == nullptr) return -1;
 
-        if (rt->get_key() == k) return rt->get_val();
-        if (rt->get_key() > k) return findhelp(rt->left, k);
+        if (rt->key == k) return rt->value;
+        if (rt->key > k) return findhelp(rt->left, k);
         else return findhelp(rt->right, k);
     }
 
@@ -69,8 +101,27 @@ private:
             return new Node(k, v);
         }
 
-        if (rt->get_key() > k) rt->left = inserthelp(rt->left, k, v);
+        if (rt->key > k) rt->left = inserthelp(rt->left, k, v);
         else rt->right = inserthelp(rt->right, k, v);
+
+
+        // complementary operations for avl (rotations)
+
+        rt->height = 1 + max(h(rt->left), h(rt->right));
+        int balance_factor = get_balance(rt);
+
+        if (balance_factor < -1 && k >= rt->right->key) return l_rotate(rt);
+        if (balance_factor > 1 && k < rt->left->key) return r_rotate(rt);
+
+        if (balance_factor > 1 && k >= rt->left->key) {
+            rt->left = l_rotate(rt->left);
+            return r_rotate(rt);
+        }
+
+        if (balance_factor < -1 && k < rt->right->key) {
+            rt->right = r_rotate(rt->right);
+            return l_rotate(rt);
+        }
 
         return rt;
     }
@@ -79,16 +130,16 @@ private:
 
         if (rt == nullptr) return nullptr;
         
-        if (rt->get_key() > k)
+        if (rt->key > k)
             rt->left = removehelp(rt->left, k);
         
-        else if (rt->get_key() < k)
+        else if (rt->key < k)
             rt->right = removehelp(rt->right, k);
 
         else {
             Node* temp = getmin(rt->right);
-            rt->set_val(temp->get_val());
-            rt->set_key(temp->get_key());
+            rt->value = temp->value;
+            rt->key = temp->key;
             rt->right = deletemin(rt->right);
         }
 
@@ -96,16 +147,16 @@ private:
     }
 };
 
-int BST::find (int k) {
+int AVL::find (int k) {
     return findhelp(this->root, k);
 };
 
-void BST::insert (int k, int v) {
+void AVL::insert (int k, int v) {
     this->root = inserthelp(this->root, k, v);
     this->node_count++;
 };
 
-int BST::remove (int k) {
+int AVL::remove (int k) {
     int temp = findhelp(this->root, k);
     if (temp != -1) {
         this->root = removehelp(this->root, k);
@@ -119,7 +170,7 @@ void traverse (Node* rt) {
 
     if (rt == nullptr) return;
 
-    cout << rt->get_key() << " ";
+    cout << rt->key << " ";
     traverse(rt->left);
     traverse(rt->right);
 }
@@ -130,26 +181,24 @@ int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    BST bst;
-    bst.insert(37, 37);
-    bst.insert(24, 24);
-    bst.insert(42, 42);
-    bst.insert(7, 0);
-    bst.insert(2, 0);
-    bst.insert(40, 0);
-    bst.insert(42, 1);
-    bst.insert(32, 0);
-    bst.insert(120, 0);
+    AVL avl;
+    avl.insert(4, 0);
+    avl.insert(6, 0);
+    avl.insert(8, 2);
+    avl.insert(3, 0);
+    avl.insert(2, 0);
+    avl.insert(5, 0);
 
-    traverse(bst.root); cout << "\n";
-    // expected: 37 24 7 2 32 42 40 42 120
 
-    cout << bst.find(42) << "\n";
-    // expected: 42
+    traverse(avl.root); cout << "\n";
+    // expected: 4 3 2 6 5 8
 
-    bst.remove(37);
-    traverse(bst.root); cout << "\n";
-    // expected: 40 24 7 2 32 42 42 120
+    cout << avl.find(8) << "\n";
+    // expected: 2
+
+    avl.remove(6);
+    traverse(avl.root); cout << "\n";
+    // expected: 4 3 2 5 8
 
     return 0;
 }
