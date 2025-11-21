@@ -17,6 +17,7 @@ pii bfs (vvi& graph, int s, int n) {
     vb visited (n);
     vi dists (n, imax); 
     queue<int> q;
+    q.push(s);
 
     dists[s] = 0;
     visited[s] =  true;
